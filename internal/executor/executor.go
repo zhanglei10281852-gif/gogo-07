@@ -150,59 +150,88 @@ func (e *Executor) runNoTables(p *plan) (*QueryResult, error) {
 func (e *Executor) materializeJoin(p *plan) ([]*joinRow, error) {
 	base := p.tables[0]
 	rows := make([]*joinRow, 0, len(base.table.Rows))
-	for i, r := range base.table.Rows {
+	for rowIdx, values := range base.table.Rows {
 		views := make(map[string]*rowView)
-		rv := &rowView{table: base.table, rowIdx: i, values: r}
-		views[strings.ToLower(base.alias)] = rv
-		views[strings.ToLower(base.name)] = rv
+		addTableView(views, base, rowIdx, values)
 		rows = append(rows, &joinRow{views: views, match: true})
 	}
 
-	for _, pj := range p.joins {
+	for joinIdx, pj := range p.joins {
+		right := pj.right
+		matchedRight := make([]bool, len(right.table.Rows))
 		newRows := make([]*joinRow, 0)
-		rightTbl := pj.right
-		for _, jr := range rows {
-			matched := false
-			for i, rr := range rightTbl.table.Rows {
-				newViews := make(map[string]*rowView)
-				for k, v := range jr.views {
-					newViews[k] = v
-				}
-				rv := &rowView{table: rightTbl.table, rowIdx: i, values: rr}
-				newViews[strings.ToLower(rightTbl.alias)] = rv
-				newViews[strings.ToLower(rightTbl.name)] = rv
-				newJR := &joinRow{views: newViews, match: true}
+
+		for _, leftRow := range rows {
+			matchedLeft := false
+			for rightIdx, rightValues := range right.table.Rows {
+				views := cloneViews(leftRow.views)
+				addTableView(views, right, rightIdx, rightValues)
+				candidate := &joinRow{views: views, match: true}
+
 				if pj.on != nil {
-					v, err := e.evalExpr(pj.on, newJR, nil)
+					value, err := e.evalExpr(pj.on, candidate, nil)
 					if err != nil {
 						return nil, err
 					}
-					if !v.AsBool() {
+					if !value.AsBool() {
 						continue
 					}
 				}
-				matched = true
-				newRows = append(newRows, newJR)
+
+				matchedLeft = true
+				matchedRight[rightIdx] = true
+				newRows = append(newRows, candidate)
 			}
-			if !matched && pj.typ != parser.JoinInner {
-				newViews := make(map[string]*rowView)
-				for k, v := range jr.views {
-					newViews[k] = v
-				}
-				nullRow := make([]types.Value, len(rightTbl.table.Columns))
-				for j := range nullRow {
-					nullRow[j] = types.NullValue()
-				}
-				rv := &rowView{table: rightTbl.table, rowIdx: -1, values: nullRow}
-				newViews[strings.ToLower(rightTbl.alias)] = rv
-				newViews[strings.ToLower(rightTbl.name)] = rv
-				newRows = append(newRows, &joinRow{views: newViews, match: false})
+
+			if !matchedLeft && pj.typ == parser.JoinLeft {
+				views := cloneViews(leftRow.views)
+				addTableView(views, right, -1, nullValues(len(right.table.Columns)))
+				newRows = append(newRows, &joinRow{views: views, match: false})
 			}
 		}
+
+		if pj.typ == parser.JoinRight {
+			leftTables := p.tables[:joinIdx+1]
+			for rightIdx, rightValues := range right.table.Rows {
+				if matchedRight[rightIdx] {
+					continue
+				}
+
+				views := make(map[string]*rowView)
+				for _, left := range leftTables {
+					addTableView(views, left, -1, nullValues(len(left.table.Columns)))
+				}
+				addTableView(views, right, rightIdx, rightValues)
+				newRows = append(newRows, &joinRow{views: views, match: false})
+			}
+		}
+
 		rows = newRows
 	}
 
 	return rows, nil
+}
+
+func cloneViews(views map[string]*rowView) map[string]*rowView {
+	cloned := make(map[string]*rowView, len(views))
+	for name, view := range views {
+		cloned[name] = view
+	}
+	return cloned
+}
+
+func addTableView(views map[string]*rowView, table planTable, rowIdx int, values []types.Value) {
+	view := &rowView{table: table.table, rowIdx: rowIdx, values: values}
+	views[strings.ToLower(table.alias)] = view
+	views[strings.ToLower(table.name)] = view
+}
+
+func nullValues(columnCount int) []types.Value {
+	values := make([]types.Value, columnCount)
+	for i := range values {
+		values[i] = types.NullValue()
+	}
+	return values
 }
 
 func (e *Executor) projectRow(p *plan, jr *joinRow, _ *aggregateContext) ([]string, []types.ValueType, [][]types.Value, error) {
