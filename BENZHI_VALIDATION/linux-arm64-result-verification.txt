@@ -1,0 +1,144 @@
+Go result repository container validation
+task_id: 7
+task_type: diagnosis
+platform: linux/arm64
+image: gomark-task-7-arm64:72ed516adc4a
+started_at: 2026-08-15T02:38:50.351Z
+finished_at: 2026-08-15T02:47:39.868Z
+status: pass
+verification_1: expected_exit=1; actual_exit=1; matched=true; command=go test ./internal/executor -run "^TestRightJoin" -count=1 -v
+
+===== command 1 =====
+phase: result_verification
+$ docker run --rm --network none --platform linux/arm64 --mount type=bind,source=E:\gomark\tmp\task-package-7-2b88df57-d74a-4b78-b72d-71894b7daa8e\trusted-test.patch,target=/tmp/gomark-trusted-test.patch,readonly -e GOTOOLCHAIN=local -e GOPROXY=off -e GOSUMDB=off gomark-task-7-arm64:72ed516adc4a bash -c set -o pipefail
+git apply --check /tmp/gomark-trusted-test.patch >/dev/null || exit 97
+git apply /tmp/gomark-trusted-test.patch >/dev/null || exit 98
+go test ./internal/executor -run "^TestRightJoin" -count=1 -v
+cwd: E:\gomark\tmp\task-package-7-2b88df57-d74a-4b78-b72d-71894b7daa8e\source
+actual_exit: 1
+--- stdout ---
+=== RUN   TestRightJoinPreservesRightRowsAndNullExtendsLeft
+    right_join_test.go:77: 
+        	Error Trace:	/app/internal/executor/right_join_test.go:77
+        	Error:      	Not equal: 
+        	            	expected: [][]string{[]string{"1", "L1a", "1", "R1a"}, []string{"1", "L1a", "1", "R1b"}, []string{"1", "L1b", "1", "R1a"}, []string{"1", "L1b", "1", "R1b"}, []string{"NULL", "NULL", "3", "R3"}, []string{"NULL", "NULL", "5", "R5"}}
+        	            	actual  : [][]string{[]string{"2", "L2", "NULL", "NULL"}, []string{"4", "L4", "NULL", "NULL"}, []string{"1", "L1a", "1", "R1a"}, []string{"1", "L1a", "1", "R1b"}, []string{"1", "L1b", "1", "R1a"}, []string{"1", "L1b", "1", "R1b"}}
+        	            	
+        	            	Diff:
+        	            	--- Expected
+        	            	+++ Actual
+        	            	@@ -1,2 +1,14 @@
+        	            	 ([][]string) (len=6) {
+        	            	+ ([]string) (len=4) {
+        	            	+  (string) (len=1) "2",
+        	            	+  (string) (len=2) "L2",
+        	            	+  (string) (len=4) "NULL",
+        	            	+  (string) (len=4) "NULL"
+        	            	+ },
+        	            	+ ([]string) (len=4) {
+        	            	+  (string) (len=1) "4",
+        	            	+  (string) (len=2) "L4",
+        	            	+  (string) (len=4) "NULL",
+        	            	+  (string) (len=4) "NULL"
+        	            	+ },
+        	            	  ([]string) (len=4) {
+        	            	@@ -24,14 +36,2 @@
+        	            	   (string) (len=3) "R1b"
+        	            	- },
+        	            	- ([]string) (len=4) {
+        	            	-  (string) (len=4) "NULL",
+        	            	-  (string) (len=4) "NULL",
+        	            	-  (string) (len=1) "3",
+        	            	-  (string) (len=2) "R3"
+        	            	- },
+        	            	- ([]string) (len=4) {
+        	            	-  (string) (len=4) "NULL",
+        	            	-  (string) (len=4) "NULL",
+        	            	-  (string) (len=1) "5",
+        	            	-  (string) (len=2) "R5"
+        	            	  }
+        	Test:       	TestRightJoinPreservesRightRowsAndNullExtendsLeft
+    right_join_test.go:86: 
+        	Error Trace:	/app/internal/executor/right_join_test.go:86
+        	Error:      	Should be true
+        	Test:       	TestRightJoinPreservesRightRowsAndNullExtendsLeft
+        	Messages:   	unmatched right rows must NULL-extend left columns
+    right_join_test.go:87: 
+        	Error Trace:	/app/internal/executor/right_join_test.go:87
+        	Error:      	Should be true
+        	Test:       	TestRightJoinPreservesRightRowsAndNullExtendsLeft
+        	Messages:   	unmatched right rows must NULL-extend left columns
+    right_join_test.go:86: 
+        	Error Trace:	/app/internal/executor/right_join_test.go:86
+        	Error:      	Should be true
+        	Test:       	TestRightJoinPreservesRightRowsAndNullExtendsLeft
+        	Messages:   	unmatched right rows must NULL-extend left columns
+    right_join_test.go:87: 
+        	Error Trace:	/app/internal/executor/right_join_test.go:87
+        	Error:      	Should be true
+        	Test:       	TestRightJoinPreservesRightRowsAndNullExtendsLeft
+        	Messages:   	unmatched right rows must NULL-extend left columns
+--- FAIL: TestRightJoinPreservesRightRowsAndNullExtendsLeft (0.04s)
+=== RUN   TestRightJoinManyToManyMatches
+--- PASS: TestRightJoinManyToManyMatches (0.00s)
+=== RUN   TestRightJoinWhereSeesUnmatchedRightRows
+    right_join_test.go:116: 
+        	Error Trace:	/app/internal/executor/right_join_test.go:116
+        	Error:      	Not equal: 
+        	            	expected: [][]string{[]string{"3", "R3"}, []string{"5", "R5"}}
+        	            	actual  : [][]string{}
+        	            	
+        	            	Diff:
+        	            	--- Expected
+        	            	+++ Actual
+        	            	@@ -1,10 +1,2 @@
+        	            	-([][]string) (len=2) {
+        	            	- ([]string) (len=2) {
+        	            	-  (string) (len=1) "3",
+        	            	-  (string) (len=2) "R3"
+        	            	- },
+        	            	- ([]string) (len=2) {
+        	            	-  (string) (len=1) "5",
+        	            	-  (string) (len=2) "R5"
+        	            	- }
+        	            	+([][]string) {
+        	            	 }
+        	Test:       	TestRightJoinWhereSeesUnmatchedRightRows
+--- FAIL: TestRightJoinWhereSeesUnmatchedRightRows (0.00s)
+=== RUN   TestRightJoinAggregationIncludesUnmatchedRightRows
+    right_join_test.go:128: 
+        	Error Trace:	/app/internal/executor/right_join_test.go:128
+        	Error:      	Not equal: 
+        	            	expected: [][]string{[]string{"1", "4"}, []string{"3", "0"}, []string{"5", "0"}}
+        	            	actual  : [][]string{[]string{"NULL", "2"}, []string{"1", "4"}}
+        	            	
+        	            	Diff:
+        	            	--- Expected
+        	            	+++ Actual
+        	            	@@ -1,2 +1,6 @@
+        	            	-([][]string) (len=3) {
+        	            	+([][]string) (len=2) {
+        	            	+ ([]string) (len=2) {
+        	            	+  (string) (len=4) "NULL",
+        	            	+  (string) (len=1) "2"
+        	            	+ },
+        	            	  ([]string) (len=2) {
+        	            	@@ -4,10 +8,2 @@
+        	            	   (string) (len=1) "4"
+        	            	- },
+        	            	- ([]string) (len=2) {
+        	            	-  (string) (len=1) "3",
+        	            	-  (string) (len=1) "0"
+        	            	- },
+        	            	- ([]string) (len=2) {
+        	            	-  (string) (len=1) "5",
+        	            	-  (string) (len=1) "0"
+        	            	  }
+        	Test:       	TestRightJoinAggregationIncludesUnmatchedRightRows
+--- FAIL: TestRightJoinAggregationIncludesUnmatchedRightRows (0.01s)
+FAIL
+FAIL	csvsql/internal/executor	0.235s
+FAIL
+
+--- stderr ---
+

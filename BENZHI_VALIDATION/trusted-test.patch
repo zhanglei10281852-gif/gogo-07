@@ -1,0 +1,10 @@
+diff --git a/internal/executor/right_join_test.go b/internal/executor/right_join_test.go
+index d532144..7b6b439 100644
+--- a/internal/executor/right_join_test.go
++++ b/internal/executor/right_join_test.go
+@@ -127,3 +127,5 @@ ORDER BY r.id`, left, right)
+ 
+ 	assert.Equal(t, [][]string{{"1", "4"}, {"3", "0"}, {"5", "0"}}, resultTexts(result))
+ }
++
++// gomark trusted verification marker
